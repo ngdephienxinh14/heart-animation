@@ -1,118 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Heart Animation</title>
+<title>T-Rex Game</title>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+  body {
+    margin: 0;
+    background: #f7f7f7;
+    font-family: monospace;
+    user-select: none;
+  }
 
-    body {
-        background: #000;
-        overflow: hidden;
-    }
+  .game {
+  width: 900px;
+  height: 400px;
+  margin: 50px auto;
+  position: relative;
+  overflow: hidden;
 
-    canvas {
-        display: block;
-    }
+  background-image: url("anhnen.jpg");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: repeat-x;
+
+  
+  border-radius: 12px;
+}
+
+@keyframes bgMove {
+  from {
+    background-position: 0 bottom;
+  }
+  to {
+    background-position: -2000px bottom;
+  }
+}
+
+
+  /* Khủng long */
+    .dino {
+    width: 40px;
+    height: 40px;
+    background: #555;
+    position: absolute;
+    bottom: 0;
+    left: 50px;
+  }
+
+
+  .jump {
+    animation: jump 0.6s ease-out;
+  }
+
+  @keyframes jump {
+    0%   { bottom: 0; }
+    50%  { bottom: 90px; }
+    100% { bottom: 0; }
+  }
+
+  /* Xương rồng */
+  .cactus {
+    width: 20px;
+    height: 40px;
+    background: #333;
+    position: absolute;
+    bottom: 0;
+    right: -20px;
+    animation: move 1.5s linear infinite;
+  }
+
+  @keyframes move {
+    0% { right: -20px; }
+    100% { right: 820px; }
+  }
+
+  .score {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 18px;
+  }
+
+  .game-over {
+    position: absolute;
+    width: 100%;
+    top: 40%;
+    text-align: center;
+    font-size: 24px;
+    display: none;
+  }
 </style>
 </head>
+
 <body>
 
-<canvas id="canvas"></canvas>
+<div class="game">
+  <div class="dino" id="dino"></div>
+  <div class="cactus" id="cactus"></div>
+  <div class="score" id="score">Score: 0</div>
+  <div class="game-over" id="gameOver">💥 GAME OVER<br>Nhấn F5 để chơi lại</div>
+</div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+  const dino = document.getElementById("dino");
+  const cactus = document.getElementById("cactus");
+  const scoreEl = document.getElementById("score");
+  const gameOverEl = document.getElementById("gameOver");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+  let score = 0;
+  let isAlive = true;
 
-let particles = [];
-const HEART_POINTS = 800;
-let time = 0;
+  // Nhảy
+  function jump() {
+    if (dino.classList.contains("jump")) return;
+    dino.classList.add("jump");
+    setTimeout(() => dino.classList.remove("jump"), 600);
+  }
 
-// Resize
-window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space") jump();
+  });
 
-// Tạo công thức hình trái tim
-function heart(t) {
-    const x = 16 * Math.pow(Math.sin(t), 3);
-    const y =
-        13 * Math.cos(t) -
-        5 * Math.cos(2 * t) -
-        2 * Math.cos(3 * t) -
-        Math.cos(4 * t);
-    return { x, y };
-}
+  document.addEventListener("click", jump);
 
-// Particle class
-class Particle {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.size = Math.random() * 2 + 1;
-        this.alpha = Math.random();
-        this.speed = Math.random() * 0.02 + 0.01;
+  // Tính điểm
+  setInterval(() => {
+    if (isAlive) {
+      score++;
+      scoreEl.innerText = "Score: " + score;
     }
+  }, 100);
 
-    update() {
-        this.alpha += this.speed;
-        if (this.alpha > 1 || this.alpha < 0) {
-            this.speed *= -1;
-        }
+  // Va chạm
+  const checkDead = setInterval(() => {
+    const dinoBottom = parseInt(getComputedStyle(dino).getPropertyValue("bottom"));
+    const cactusRight = parseInt(getComputedStyle(cactus).getPropertyValue("right"));
+
+    if (cactusRight > 740 && cactusRight < 780 && dinoBottom < 30) {
+      isAlive = false;
+      cactus.style.animationPlayState = "paused";
+      gameOverEl.style.display = "block";
+      clearInterval(checkDead);
     }
-
-    draw() {
-        ctx.fillStyle = `rgba(255, 100, 150, ${this.alpha})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// Khởi tạo trái tim
-function initHeart() {
-    particles = [];
-    for (let i = 0; i < HEART_POINTS; i++) {
-        const t = Math.random() * Math.PI * 2;
-        const pos = heart(t);
-
-        const scale = 15;
-        const x = canvas.width / 2 + pos.x * scale;
-        const y = canvas.height / 2 - pos.y * scale;
-
-        particles.push(new Particle(x, y));
-    }
-}
-
-initHeart();
-
-// Animation loop
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    time += 0.02;
-    const pulse = Math.sin(time) * 2;
-
-    particles.forEach(p => {
-        p.x += Math.random() * pulse * 0.3;
-        p.y += Math.random() * pulse * 0.3;
-        p.update();
-        p.draw();
-    });
-
-    requestAnimationFrame(animate);
-}
-
-animate();
+  }, 10);
 </script>
 
 </body>
 </html>
+
+
