@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Heart Animation</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #000;
+        overflow: hidden;
+    }
+
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+const HEART_POINTS = 800;
+let time = 0;
+
+// Resize
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// Tạo công thức hình trái tim
+function heart(t) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
+    return { x, y };
+}
+
+// Particle class
+class Particle {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 2 + 1;
+        this.alpha = Math.random();
+        this.speed = Math.random() * 0.02 + 0.01;
+    }
+
+    update() {
+        this.alpha += this.speed;
+        if (this.alpha > 1 || this.alpha < 0) {
+            this.speed *= -1;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = `rgba(255, 100, 150, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// Khởi tạo trái tim
+function initHeart() {
+    particles = [];
+    for (let i = 0; i < HEART_POINTS; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const pos = heart(t);
+
+        const scale = 15;
+        const x = canvas.width / 2 + pos.x * scale;
+        const y = canvas.height / 2 - pos.y * scale;
+
+        particles.push(new Particle(x, y));
+    }
+}
+
+initHeart();
+
+// Animation loop
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    time += 0.02;
+    const pulse = Math.sin(time) * 2;
+
+    particles.forEach(p => {
+        p.x += Math.random() * pulse * 0.3;
+        p.y += Math.random() * pulse * 0.3;
+        p.update();
+        p.draw();
+    });
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
